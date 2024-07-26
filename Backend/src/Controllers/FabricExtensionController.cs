@@ -10,7 +10,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Boilerplate.Controllers
@@ -26,19 +29,25 @@ namespace Boilerplate.Controllers
         private readonly IAuthenticationService _authenticationService;
         private readonly IAuthorizationHandler _authorizationHandler;
         private readonly IItemFactory _itemFactory;
+        private readonly ILakehouseClientService _lakehouseClientService;
+        private readonly IHttpClientService _httpClientService;
 
         public FabricExtensionController(
             ILogger<FabricExtensionController> logger,
             IHttpContextAccessor httpContextAccessor,
             IAuthenticationService authenticationService,
             IAuthorizationHandler authorizationHandler,
-            IItemFactory itemFactory)
+            IItemFactory itemFactory,
+            ILakehouseClientService lakehouseClientService,
+            IHttpClientService httpClientService)
         {
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
             _authenticationService = authenticationService;
             _authorizationHandler = authorizationHandler;
             _itemFactory = itemFactory;
+            _lakehouseClientService = lakehouseClientService;
+            _httpClientService = httpClientService;
         }
 
         /// <summary>
@@ -78,6 +87,39 @@ namespace Boilerplate.Controllers
 
             // Return the updated operands
             return Ok(serializedDoubleResult);
+        }
+
+        /// <summary>
+        /// Performs conversion.
+        /// </summary>
+        /// <returns>A FabricItemMetadata representing the updated item.</returns>
+        [HttpPost("{workspaceObjectId}/{itemObjectId}/convert")]
+        public async Task<IActionResult> Convert(Guid workspaceObjectId, Guid itemObjectId, [FromBody] JObject requestBody)
+        {
+            _logger.LogInformation("Convert called: workspaceObjectId={0}, itemObjectId={1}", workspaceObjectId, itemObjectId);
+
+            // Authenticate the call
+            var authorizationContext = await _authenticationService.AuthenticateDataPlaneCall(_httpContextAccessor.HttpContext, allowedScopes: new[] { WorkloadScopes.Item1ReadWriteAll });
+
+            // This is a direct call to the workload which was not verified by Fabric, so need to check permissions.
+            await _authorizationHandler.ValidatePermissions(authorizationContext, workspaceObjectId, itemObjectId, new[] { "Read", "Write" });
+
+            // Now can execute the action on the item
+            var item = (IConvertItem)_itemFactory.CreateItem(WorkloadConstants.ItemTypes.Item1, authorizationContext);
+            await item.Load(itemObjectId);
+
+            // Parse the request body to get the required parameters
+            string lakehouseId = requestBody["lakehouse"]["id"].ToString();
+            string inputDataFileName = requestBody["inputDataFileName"].ToString();
+            string templateFileName = requestBody["templateFileName"].ToString();
+            string convertServiceEndpoint = requestBody["convertServiceEndpoint"].ToString();
+
+            var convertResult = await item.Convert(workspaceObjectId.ToString(), lakehouseId, inputDataFileName, templateFileName, convertServiceEndpoint);
+
+            var serializedResult = JsonConvert.SerializeObject(new { ConvertedResult = convertResult });
+
+            // Return the updated operands
+            return Ok(serializedResult);
         }
     }
 }

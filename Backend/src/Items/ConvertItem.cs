@@ -4,23 +4,25 @@
 
 using Boilerplate.Constants;
 using Boilerplate.Contracts;
+using Boilerplate.Controllers;
 using Boilerplate.Exceptions;
 using Boilerplate.Services;
 using Boilerplate.Utils;
 using Fabric_Extension_BE_Boilerplate.Constants;
 using Fabric_Extension_BE_Boilerplate.Contracts.FabricAPI.Workload;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Boilerplate.Items
 {
-    public class Item1 : ItemBase<Item1, Item1Metadata, Item1ClientMetadata>, IItem1
+    public class ConvertItem : ItemBase<ConvertItem, ConvertItemMetadata, ConvertItemClientMetadata>, IConvertItem
     {
-        public static readonly IList<string> SupportedOperators = Enum.GetNames<Item1Operator>();
-
         private static readonly IList<string> OneLakeScopes = new[] { $"{EnvironmentConstants.OneLakeResourceId}/.default" };
 
         private static readonly IList<string> FabricScopes = new[] { $"{EnvironmentConstants.FabricBackendResourceId}/Lakehouse.Read.All" };
@@ -29,27 +31,36 @@ namespace Boilerplate.Items
 
         private readonly IAuthenticationService _authenticationService;
 
-        private Item1Metadata _metadata;
+        private readonly IHttpClientService _httpClientService;
 
-        public Item1(
-            ILogger<Item1> logger,
+        private readonly AuthorizationContext _authorizationContext;
+
+        private ConvertItemMetadata _metadata;
+
+        public ConvertItem(
+            ILogger<ConvertItem> logger,
             IItemMetadataStore itemMetadataStore,
             ILakehouseClientService lakeHouseClientService,
             IAuthenticationService authenticationService,
-            AuthorizationContext authorizationContext)
+            AuthorizationContext authorizationContext,
+            IHttpClientService httpClientService)
             : base(logger, itemMetadataStore, authorizationContext)
         {
             _lakeHouseClientService = lakeHouseClientService;
             _authenticationService = authenticationService;
+            _httpClientService = httpClientService;
+            _authorizationContext = authorizationContext;
         }
 
         public override string ItemType => WorkloadConstants.ItemTypes.Item1;
 
         public ItemReference Lakehouse => Metadata.Lakehouse;
 
-        public int Operand1 => Metadata.Operand1;
+        public string InputDataFileName => Metadata.InputDataFileName;
 
-        public int Operand2 => Metadata.Operand2;
+        public string TemplateFileName => Metadata.TemplateFileName;
+
+        public string ConvertServiceEndpoint => Metadata.ConvertServiceEndpoint;
 
         public override async Task<ItemPayload> GetItemPayload()
         {
@@ -71,7 +82,7 @@ namespace Boilerplate.Items
 
             return new ItemPayload
             {
-                Item1Metadata = typeSpecificMetadata.ToClientMetadata(lakehouseItem)
+                ConvertItemMetadata = typeSpecificMetadata.ToClientMetadata(lakehouseItem)
             };
         }
 
@@ -79,15 +90,18 @@ namespace Boilerplate.Items
         {
             var token = await _authenticationService.GetAccessTokenOnBehalfOf(AuthorizationContext, OneLakeScopes);
 
-            var op1 = _metadata.Operand1;
-            var op2 = _metadata.Operand2;
-            var calculationOperator = _metadata.Operator;
+            var inputDataFileName = _metadata.InputDataFileName;
+            var templateFileName = _metadata.TemplateFileName;
+            var convertServiceEndpoint = _metadata.ConvertServiceEndpoint;
 
-            var result = CalculateResult(op1, op2, calculationOperator);
+            // Conversion operation
+            var result = await Convert(Lakehouse.WorkspaceId.ToString(), Lakehouse.Id.ToString(), inputDataFileName, templateFileName, convertServiceEndpoint);
+
+            var convertedResult = JObject.Parse(result)["result"];
 
             // Write result to Lakehouse
             var filePath = GetLakehouseFilePath(jobType, jobInstanceId);
-            await _lakeHouseClientService.WriteToLakehouseFile(token, filePath, result);
+            await _lakeHouseClientService.WriteToLakehouseFile(token, filePath, convertedResult.ToString());
         }
 
         public override async Task<ItemJobInstanceState> GetJobState(string jobType, Guid jobInstanceId)
@@ -107,105 +121,41 @@ namespace Boilerplate.Items
         {
             var typeToFileName = new Dictionary<string, string>
             {
-                { Item1JobType.ScheduledJob, $"CalculationResult_{jobInstanceId}.txt" },
-                // { Item1JobType.CalculateAsText, $"CalculationResult_{jobInstanceId}.txt" },
-                // { Item1JobType.CalculateAsParquet, $"CalculationResult_{jobInstanceId}.parquet" }
+                { Item1JobType.ScheduledJob, $"ConversionResult_{jobInstanceId}.json" },
+                { Item1JobType.ConvertOperation, $"ConversionResult_{jobInstanceId}.json" },
             };
             typeToFileName.TryGetValue(jobType, out var fileName);
 
             if (fileName != null)
             {
-                return $"{_metadata.Lakehouse.WorkspaceId}/{_metadata.Lakehouse.Id}/Files/{fileName}";
+                return $"{_metadata.Lakehouse.WorkspaceId}/{_metadata.Lakehouse.Id}/Files/outputdata/{fileName}";
             }
             throw new NotSupportedException("Workload job type is not supported");
         }
 
-        private string CalculateResult(int op1, int op2, Item1Operator calculationOperator)
-        {
-            switch (calculationOperator)
-            {
-                case Item1Operator.Add:
-                    return FormatResult(op1, op2, calculationOperator, op1 + op2);
-                case Item1Operator.Subtract:
-                    return FormatResult(op1, op2, calculationOperator, op1 - op2);
-                case Item1Operator.Multiply:
-                    return FormatResult(op1, op2, calculationOperator, op1 * op2);
-                case Item1Operator.Divide:
-                    if (op2 != 0)
-                    {
-                        return FormatResult(op1, op2, calculationOperator, op1 / op2);
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Cannot divide by zero.");
-                    }
-                case Item1Operator.Random:
-                    var rand = new Random().Next(op1, op2);
-                    return FormatResult(op1, op2, calculationOperator, rand);
-                default:
-                    throw new ArgumentException($"Unsupported operator: {calculationOperator}");
-            }
-        }
-
-        private string FormatResult(int op1, int op2, Item1Operator calculationOperator, int result)
-        {
-            return $"op1 = {op1}, op2 = {op2}, operator = {calculationOperator}, result = {result}";
-        }
-
-        public Item1Operator Operator => Metadata.Operator;
-
-        private Item1Metadata Metadata => Ensure.NotNull(_metadata, "The item object must be initialized before use");
-
-        public async Task<(double Operand1, double Operand2)> Double()
-        {
-            var metadata = Metadata.Clone();
-
-            switch (metadata.Operator)
-            {
-                case Item1Operator.Add:
-                case Item1Operator.Subtract:
-                case Item1Operator.Random:
-                    metadata.Operand1 *= 2;
-                    metadata.Operand2 *= 2;
-                    break;
-
-                case Item1Operator.Multiply:
-                case Item1Operator.Divide:
-                    metadata.Operand1 *= 2;
-                    break;
-
-                default:
-                    throw Ensure.UnexpectedSwitchValue(metadata.Operator, "Unexpected operator");
-            }
-
-            _metadata = metadata;
-
-            await SaveChanges();
-
-            return (metadata.Operand1, metadata.Operand2);
-        }
+        private ConvertItemMetadata Metadata => Ensure.NotNull(_metadata, "The item object must be initialized before use");
 
         protected override void SetDefinition(CreateItemPayload payload)
         {
             if (payload == null)
             {
                 Logger.LogInformation("No payload is provided for {0}, objectId={1}", ItemType, ItemObjectId);
-                _metadata = Item1Metadata.Default.Clone();
+                _metadata = ConvertItemMetadata.Default.Clone();
                 return;
             }
 
-            if (payload.Item1Metadata == null)
+            if (payload.ConvertItemMetadata == null)
             {
                 throw new InvalidItemPayloadException(ItemType, ItemObjectId);
             }
 
-            if (payload.Item1Metadata.Lakehouse == null)
+            if (payload.ConvertItemMetadata.Lakehouse == null)
             {
                 throw new InvalidItemPayloadException(ItemType, ItemObjectId)
                     .WithDetail(ErrorCodes.ItemPayload.MissingLakehouseReference, "Missing Lakehouse reference");
             }
 
-            _metadata = payload.Item1Metadata.Clone();
+            _metadata = payload.ConvertItemMetadata.Clone();
         }
 
         protected override void UpdateDefinition(UpdateItemPayload payload)
@@ -216,28 +166,57 @@ namespace Boilerplate.Items
                 return;
             }
 
-            if (payload.Item1Metadata == null)
+            if (payload.ConvertItemMetadata == null)
             {
                 throw new InvalidItemPayloadException(ItemType, ItemObjectId);
             }
 
-            if (payload.Item1Metadata.Lakehouse == null)
+            if (payload.ConvertItemMetadata.Lakehouse == null)
             {
                 throw new InvalidItemPayloadException(ItemType, ItemObjectId)
                     .WithDetail(ErrorCodes.ItemPayload.MissingLakehouseReference, "Missing Lakehouse reference");
             }
 
-            SetTypeSpecificMetadata(payload.Item1Metadata);
+            SetTypeSpecificMetadata(payload.ConvertItemMetadata);
         }
 
-        protected override void SetTypeSpecificMetadata(Item1Metadata itemMetadata)
+        protected override void SetTypeSpecificMetadata(ConvertItemMetadata itemMetadata)
         {
             _metadata = itemMetadata.Clone();
         }
 
-        protected override Item1Metadata GetTypeSpecificMetadata()
+        protected override ConvertItemMetadata GetTypeSpecificMetadata()
         {
             return Metadata.Clone();
+        }
+
+        public async Task<string> Convert(string workspaceId, string lakehouseId, string inputDataFileName, string templateFileName, string convertServiceEndpoint)
+        {
+            var lakeHouseFilePath = $"{workspaceId}/{lakehouseId}/Files";
+
+            var lakeHouseAccessToken = await _authenticationService.GetAccessTokenOnBehalfOf(_authorizationContext, LakehouseController.OneLakeScopes);
+            var inputDataFilePath = $"{lakeHouseFilePath}/{inputDataFileName}";
+            var inputData = await _lakeHouseClientService.GetLakehouseFile(lakeHouseAccessToken, inputDataFilePath);
+
+            var templateFilePath = $"{lakeHouseFilePath}/{templateFileName}";
+            var templateContent = await _lakeHouseClientService.GetLakehouseFile(lakeHouseAccessToken, templateFilePath);
+
+            // Create the HTTP request
+            var convertEndpoint = $"{convertServiceEndpoint}/convertToFhir?api-version=2024-05-01-preview";
+            var convertRequestBody = new JObject
+            {
+                { "InputDataString", inputData },
+                { "InputDataFormat", "Hl7v2" },
+                { "RootTemplateName", "Hl7v2/ADT_A01" }
+            };
+            var requestBodyString = convertRequestBody.ToString();
+            var content = new StringContent(requestBodyString, Encoding.UTF8, "application/json");
+            var response = await _httpClientService.PostAsync(convertEndpoint, content, string.Empty);
+
+            // Read the response
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            return responseContent;
         }
     }
 }

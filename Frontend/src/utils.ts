@@ -33,14 +33,12 @@ export function getItemEditorUrl(hostUrl: string, workspaceId: string, itemId: s
 
 const sampleWorkloadName = process.env.WORKLOAD_NAME;
 const sampleItemType = sampleWorkloadName + ".SampleWorkloadItem";
-const calculateAsText = sampleItemType + ".CalculateAsText";
+const convertOperation = sampleItemType + ".ConvertOperation";
 const scheduledJob = sampleItemType + ".ScheduledJob";
-const calculateAsParquet = sampleItemType + ".CalculateAsParquet";
 
 export const jobTypeDisplayNames: Record<string, string> = {
     [scheduledJob]: 'Scheduled Job',
-    [calculateAsText]: 'Calculate as Text',
-    [calculateAsParquet]: 'Calculate as Parquet'
+    [convertOperation]: 'Convert operation'
 };
 
 export function getJobDetailsPane(jobContext: ItemJobActionContext, hostUrl: string): ItemJobActionResult {
@@ -82,7 +80,7 @@ export function getJobDetailsPane(jobContext: ItemJobActionContext, hostUrl: str
         data: [
             {
                 label: 'Item Type',
-                value: 'Sample Workload Item',
+                value: 'Convert Workload Item',
                 type: 'text',
             },
             {

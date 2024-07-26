@@ -8,6 +8,8 @@ import { SampleWorkloadEditor, SamplePage } from "./components/SampleWorkloadEdi
 import { Authentication } from './components/SampleWorkloadAuthEditor/SampleWorkloadAuthEditor';
 import { Panel } from "./components/SampleWorkloadPanel/SampleWorkloadPanel";
 import { SaveAsDialog } from "./components/SampleWorkloadCreateDialog/SampleWorkloadCreateDialog";
+import { ConvertWorkloadEditor } from "./components/ConvertWorkloadEditor/ConvertWorkloadEditor";
+import { CreateItemDialog } from "./components/ConvertWorkloadCreateDialog/ConvertWorkloadCreateDialog";
 
 /*
     Add your Item Editor in the Route section of the App function below
@@ -31,6 +33,24 @@ export interface ContextProps {
 export function App({ history, workloadClient }: AppProps) {
     return <Router history={history}>
         <Switch>
+
+            {/* This is the routing to the Convert Workload Editor.
+                 Add your workload editor path here, and reference it in index.worker.ts  */}
+            <Route path="/convert-workload-editor/:itemObjectId">
+                <ConvertWorkloadEditor
+                    workloadClient={workloadClient} />
+            </Route>
+
+            
+            {/* This is the routing to the Convert Workload Create Dialog experience, 
+                where an Item will be saved and the Editor will be opened
+                Add your workload creator path here, and reference it in index.worker.ts  */}
+            <Route path="/convert-workload-create-dialog/:workspaceObjectId">
+                <CreateItemDialog
+                    workloadClient={workloadClient}
+                    isImmediateSave={true} />
+            </Route>
+
             {/* This is the routing to the Sample Workload Editor.
                  Add your workload editor path here, and reference it in index.worker.ts  */}
             <Route path="/sample-workload-editor/:itemObjectId">

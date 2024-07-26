@@ -7,30 +7,31 @@ import {
     NotificationType,
 } from '@ms-fabric/workload-client';
 
-import * as Controller from './controller/SampleWorkloadController';
-import { ItemActionContext, ItemJobActionContext } from './models/SampleWorkloadModel';
+import * as Controller from './controller/ConvertWorkloadController';
+import { ItemActionContext, ItemJobActionContext } from './models/ConvertWorkloadModel';
 import { getJobDetailsPane } from './utils';
 
 export async function initialize(params: InitParams) {
 
     const workloadClient = createWorkloadClient();
-    const sampleWorkloadName = process.env.WORKLOAD_NAME;
-    const sampleItemType = sampleWorkloadName + ".SampleWorkloadItem";
-    const calculateAsText = sampleItemType + ".CalculateAsText";
+    const convertWorkloadName = process.env.WORKLOAD_NAME;
+    const convertItemType = convertWorkloadName + ".ConvertWorkloadItem";
+    const convertOperation = convertItemType + ".ConvertOperation";
 
     workloadClient.action.onAction(async function ({ action, data }) {
         switch (action) {
-            /* This is the entry point for the Sample Workload Create experience, 
+            /* This is the entry point for the Convert Workload Create experience, 
             as referenced by the Product->CreateExperience->Cards->onClick->action 'open.createSampleWorkload' in the localWorkloadManifest.json manifest.
              This will open a Save dialog, and after a successful creation, the editor experience of the saved sampleWorkload item will open
             */
-            case 'open.createSampleWorkload':
+            case 'open.createConvertWorkload':
                 const { workspaceObjectId } = data as ItemCreateContext;
+                console.log(`Received open.createConvertWorkload action with workspaceObjectId: ${workspaceObjectId}`);
                 return workloadClient.dialog.open({
-                    workloadName: sampleWorkloadName,
+                    workloadName: convertWorkloadName,
                     dialogType: DialogType.IFrame,
                     route: {
-                        path: `/sample-workload-create-dialog/${workspaceObjectId}`,
+                        path: `/convert-workload-create-dialog/${workspaceObjectId}`,
                     },
                     options: {
                         width: 360,
@@ -45,7 +46,7 @@ export async function initialize(params: InitParams) {
              */
             case 'open.createSampleWorkloadFrontendOnly':
                 return workloadClient.page.open({
-                    workloadName: sampleWorkloadName,
+                    workloadName: convertWorkloadName,
                     route: {
                         path: `/sample-workload-frontend-only`,
                     },
@@ -60,10 +61,11 @@ export async function initialize(params: InitParams) {
                     workloadClient);
 
             case 'run.calculate.job':
+            case 'run.convert.job':
                 const { item } = data as ItemActionContext;
                 return await Controller.callRunItemJob(
                     item.objectId, 
-                    calculateAsText, 
+                    convertOperation, 
                     JSON.stringify({metadata: 'JobMetadata'}), 
                     workloadClient, 
                     true /* showNotification */);

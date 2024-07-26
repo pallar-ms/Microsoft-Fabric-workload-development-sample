@@ -1,8 +1,8 @@
 {
     "name": "Product",
-    "displayName": "Sample Workload",
-    "fullDisplayName": "Sample Workload",
-    "description": "Sample Workload Description",
+    "displayName": "Convert Workload",
+    "fullDisplayName": "Convert Workload",
+    "description": "Convert Workload Description",
     "favicon": "fabric.ico",
     "icon": {
       "name": "assets/briefcase.svg"
@@ -39,15 +39,15 @@
             }
         ]},
         "recommendedItemTypes": [
-          "SampleWorkloadItem"
+          "ConvertWorkloadItem"
         ]
     },
     "createExperience": {
       "description": "CreateHub Product Description",
       "cards": [
         {
-          "title": "Sample Item",
-          "description": "Create a Sample Workload Item for your Dev Experience",
+          "title": "Convert Item",
+          "description": "Create a Convert Workload Item for your Dev Experience",
           "icon": {
             "name": "assets/dial.svg"
           },
@@ -55,7 +55,7 @@
             "name": "assets/dial.svg"
           },
           "onClick": {
-            "action": "open.createSampleWorkload"
+            "action": "open.createConvertWorkload"
           },
           "availableIn": [
             "home",

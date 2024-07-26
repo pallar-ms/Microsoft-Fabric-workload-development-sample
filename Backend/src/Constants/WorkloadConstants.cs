@@ -6,11 +6,11 @@ namespace Fabric_Extension_BE_Boilerplate.Constants
 {
     public static class WorkloadConstants
     {
-        public const string WorkloadName = "Org.WorkloadSample";
+        public const string WorkloadName = "Org.WorkloadConvert";
 
         public static class ItemTypes
         {
-            public const string Item1 = $"{WorkloadName}.SampleWorkloadItem";
+            public const string Item1 = $"{WorkloadName}.ConvertWorkloadItem";
         }
     }
 }

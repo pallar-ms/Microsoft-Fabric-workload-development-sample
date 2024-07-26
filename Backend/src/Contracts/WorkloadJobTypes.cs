@@ -12,7 +12,6 @@ namespace Boilerplate.Contracts
     public static class Item1JobType
     {
         public static readonly string ScheduledJob = ItemTypes.Item1 + ".ScheduledJob";
-        public static readonly string CalculateAsText = ItemTypes.Item1 + ".CalculateAsText";
-        public static readonly string CalculateAsParquet = ItemTypes.Item1 + ".CalculateAsParquet";
+        public static readonly string ConvertOperation = ItemTypes.Item1 + ".ConvertOperation";
     }
 }

@@ -1,5 +1,5 @@
-{  
-	"CapacityGuid": "CAPACITY_GUID", 
-	"ManifestPackageFilePath": "MANIFEST_PACKAGE_FILE_PATH",
+{
+	"CapacityGuid": "D637091F-FDBA-465F-8EDA-25AFC0CF61F1",
+	"ManifestPackageFilePath": "D:\\Repos\\AHDS\\SaaS\\Fabric-workload-dev-1\\Backend\\src\\bin\\Debug\\ManifestPackage.1.0.0.nupkg",
 	"WorkloadEndpointURL": "http://127.0.0.1:5000/workload"
 }

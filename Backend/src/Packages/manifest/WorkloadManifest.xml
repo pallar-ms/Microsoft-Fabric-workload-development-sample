@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <WorkloadManifestConfiguration xmlns:xsi= "http://www.w3.org/2001/XMLSchema-instance" SchemaVersion="1.0.0">
-  <Workload WorkloadName="Org.WorkloadSample" HostingType="Remote">
+  <Workload WorkloadName="Org.WorkloadConvert" HostingType="Remote">
     <Version>1.0.0</Version>
     <RemoteServiceConfiguration>
       <CloudServiceConfiguration>
         <Cloud>Public</Cloud>
         <AADApp>
-          <AppId>00000000-0000-0000-0000-000000000000</AppId> <!-- Your application ID -->
-          <RedirectUri>http://localhost</RedirectUri>
-          <ResourceId>api://localdevinstance/tenantID/Org.WorkloadSample</ResourceId>
+          <AppId>2be585f0-763e-4ce0-b03d-f8c7b6e41edf</AppId> <!-- Your application ID -->
+          <RedirectUri>http://localhost:60006/close</RedirectUri>
+          <ResourceId>api://localdevinstance/096d1a84-d560-4fa0-b41f-e88d1e4e3cae/Org.WorkloadConvert/YQc</ResourceId>
         </AADApp>
         <Endpoints>
           <ServiceEndpoint>

@@ -17,7 +17,7 @@ namespace Boilerplate.Controllers
     [ApiController]
     public class LakehouseController : ControllerBase
     {
-        private static readonly IList<string> OneLakeScopes = new[] { $"{EnvironmentConstants.OneLakeResourceId}/.default" };
+        public static readonly IList<string> OneLakeScopes = new[] { $"{EnvironmentConstants.OneLakeResourceId}/.default" };
         private static readonly IList<string> ScopesForReadLakehouseFile = new[] { WorkloadScopes.FabricLakehouseReadAll, WorkloadScopes.FabricLakehouseReadWriteAll };
         private static readonly IList<string> ScopesForWriteLakehouseFile = new[] { WorkloadScopes.FabricLakehouseReadWriteAll };
 

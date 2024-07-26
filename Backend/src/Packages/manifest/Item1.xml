@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ItemManifestConfiguration xmlns:xsi= "http://www.w3.org/2001/XMLSchema-instance" SchemaVersion="1.0.0">
-  <Item TypeName="Org.WorkloadSample.SampleWorkloadItem" Category="Data">
-    <Workload WorkloadName="Org.WorkloadSample" />
+  <Item TypeName="Org.WorkloadConvert.ConvertWorkloadItem" Category="Data">
+    <Workload WorkloadName="Org.WorkloadConvert" />
     <JobScheduler>
       <!-- Set the deduplicate option for on demand item job. 
         - None to not deduplicate job.
@@ -10,10 +10,9 @@
       <OnDemandJobDeduplicateOptions>PerItem</OnDemandJobDeduplicateOptions>
       <ScheduledJobDeduplicateOptions>PerItem</ScheduledJobDeduplicateOptions>
       <ItemJobTypes>
-        <ItemJobType Name="Org.WorkloadSample.SampleWorkloadItem.ScheduledJob" />
-        <ItemJobType Name="Org.WorkloadSample.SampleWorkloadItem.CalculateAsText" />
-        <ItemJobType Name="Org.WorkloadSample.SampleWorkloadItem.CalculateAsParquet" />
-      </ItemJobTypes>
+        <ItemJobType Name="Org.WorkloadConvert.ConvertWorkloadItem.ScheduledJob" />
+        <ItemJobType Name="Org.WorkloadConvert.ConvertWorkloadItem.ConvertOperation" />
+       </ItemJobTypes>
     </JobScheduler>
   </Item>
 </ItemManifestConfiguration>
